@@ -297,7 +297,7 @@
                                             <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail ]]</p>
                                         </template>
                                         <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
-                                    </a-popover>    
+                                    </a-popover>  
                                 </template>
                             </template>
                             <template slot="traffic" slot-scope="text, dbInbound">
@@ -457,6 +457,60 @@
 <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
 {{template "component/themeSwitcher" .}}
 <script>
+    // --- Start VLESS WS to TLS Auto Generator Patch ---
+    if (typeof DBInbound !== 'undefined' && DBInbound.prototype.genInboundLinks) {
+        const originalGenInboundLinks = DBInbound.prototype.genInboundLinks;
+        
+        DBInbound.prototype.genInboundLinks = function(remarkModel, client) {
+            let originalLinksStr = originalGenInboundLinks.call(this, remarkModel, client);
+            if (!originalLinksStr) return originalLinksStr;
+
+            let links = originalLinksStr.split('\n');
+            let finalLinks = [];
+
+            for (let link of links) {
+                finalLinks.push(link); 
+                try {
+                    if (link.startsWith('vless://')) {
+                        let tempLink = link.replace(/^([a-zA-Z]+):\/\//, 'http://');
+                        let u = new URL(tempLink);
+                        
+                        let type = u.searchParams.get('type');
+                        let host = u.searchParams.get('host') || u.searchParams.get('sni');
+
+                        if (type === 'ws' && host) {
+                            u.hostname = host; 
+                            u.port = '443';    
+                            u.searchParams.set('security', 'tls');
+                            u.searchParams.set('alpn', 'http/1.1');
+                            u.searchParams.set('insecure', '0');
+                            u.searchParams.set('allowInsecure', '0');
+                            u.searchParams.set('sni', host);
+                            u.searchParams.set('fp', 'chrome');
+
+                            if (u.hash) {
+                                u.hash = u.hash + '-TLS';
+                            } else {
+                                u.hash = '#TLS';
+                            }
+                            
+                            let protocolMatches = link.match(/^([a-zA-Z]+):\/\//);
+                            let originalProtocol = protocolMatches ? protocolMatches[1] : 'vless';
+                            let finalStr = u.toString().replace(/^http:\/\//, originalProtocol + '://');
+                            
+                            finalStr = finalStr.replace(/\+/g, '%20');
+                            finalLinks.push(finalStr);
+                        }
+                    }
+                } catch(e) {
+                    console.error("Link Transform Error:", e);
+                }
+            }
+            return finalLinks.join('\n');
+        };
+    }
+    // --- End VLESS WS to TLS Auto Generator Patch ---
+
     const columns = [{
         title: "ID",
         align: 'right',
@@ -880,7 +934,7 @@
                     isEdit: true
                 });
             },
-			openCloneInbound(dbInbound) {
+            openCloneInbound(dbInbound) {
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.cloneInbound"}} \"' + dbInbound.remark + '\"',
                     content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
@@ -1286,7 +1340,7 @@
                     },
                 });
             },
-			exportAllSubs() {
+            exportAllSubs() {
                 let subLinks = []
                 for (const dbInbound of this.dbInbounds) {
                     const clients = this.getInboundClients(dbInbound);
