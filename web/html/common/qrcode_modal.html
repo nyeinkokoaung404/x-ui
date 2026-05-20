@@ -77,9 +77,9 @@
                 });
                 this.qrModal.clipboard.on('success', () => {
                     if (typeof app !== 'undefined' && app.$message) {
-                        app.$message.success('{{ i18n "Copied" }}');
+                        app.$message.success('{{ i18n "copied" }}');
                     } else {
-                        qrModalApp.$message.success('{{ i18n "Copied" }}');
+                        qrModalApp.$message.success('{{ i18n "copied" }}');
                     }
                     this.qrModal.clipboard.destroy();
                 });
