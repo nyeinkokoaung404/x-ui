@@ -1092,14 +1092,17 @@
                 return newDbInbound;
             },
             
-            // 🔄 FIXED & INJECTED: Retry Logic with Robust Modal Selector
+            // 🔄 PERFECTED: Target Client-Only Transformer with Exact WS Host Extraction & Click QR to Copy
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
                 
                 let originalLink = "";
-                if (typeof newDbInbound.genInboundLinks === 'function') {
-                    originalLink = newDbInbound.genClientLinks ? newDbInbound.genClientLinks(client, this.remarkModel) : newDbInbound.genInboundLinks(this.remarkModel);
+                // 🎯 Getting only one line of config specific to the target client
+                if (client && typeof newDbInbound.genClientLinks === 'function') {
+                    originalLink = newDbInbound.genClientLinks(client, this.remarkModel);
+                } else if (typeof newDbInbound.genInboundLinks === 'function') {
+                    originalLink = newDbInbound.genInboundLinks(this.remarkModel);
                 } else {
                     originalLink = newDbInbound.link;
                 }
@@ -1114,11 +1117,12 @@
                             const auth = protocol === 'vless' ? url.username : url.password || url.username;
                             const remark = url.hash ? url.hash.substring(1) : 'Transformer_Config';
                             
-                            const originalDomain = url.hostname; 
+                            const originalDomain = params.host || url.hostname; 
+                            
                             const path = params.path || '/';
                             const port = url.port || '443';
                             
-                            // 💥 ဤနေရာတွင် မိမိအသုံးပြုလိုသော SNI Bug အား ပြောင်းလဲနိုင်ပါသည်
+                            // 💥 Change the SNI Bug Domain you want to use here
                             const bugAddress = "mpt.com.mm"; 
                             const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
@@ -1141,9 +1145,12 @@
                                     customQrDiv.className = "transformer-qr-section";
                                     
                                     customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 8px; color: #1890ff; font-size: 13px;">⚙️ Transformer WS Config (Bug: ${bugAddress})</div>
-                                        <canvas id="transformer-qr-canvas" style="margin: 10px auto; display: block; border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"></canvas>
-                                        <textarea readonly style="width: 90%; height: 50px; font-size: 11px; margin-top: 5px; word-break: break-all; border-radius: 4px; padding: 4px;" class="ant-input">${transformerLink}</textarea>
+                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer WS Config</div>
+                                        <div style="font-size: 11px; color: #52c41a; margin-bottom: 8px;">👇 Click on Transformer QR Code to Copy</div>
+                                        <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; transition: transform 0.1s;" title="Click to Copy">
+                                            <canvas id="transformer-qr-canvas" style="margin: 5px auto; display: block; border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"></canvas>
+                                        </div>
+                                        <textarea id="transformer-link-text" readonly style="width: 90%; height: 50px; font-size: 11px; margin-top: 8px; word-break: break-all; border-radius: 4px; padding: 4px;" class="ant-input">${transformerLink}</textarea>
                                     `;
                                     
                                     const oldSection = qrContainer.querySelector('.transformer-qr-section');
@@ -1156,6 +1163,24 @@
                                         size: 180,
                                         value: transformerLink
                                     });
+
+                                    // 📋 Click QR to Copy Event Handler
+                                    const qrWrapper = document.getElementById('transformer-qr-click-wrapper');
+                                    if (qrWrapper) {
+                                        qrWrapper.addEventListener('click', () => {
+                                            navigator.clipboard.writeText(transformerLink).then(() => {
+                                                if (window.hasOwnProperty('ant') && ant.message) {
+                                                    ant.message.success('Transformer Config Copied!');
+                                                } else {
+                                                    alert('Transformer Config Copied!');
+                                                }
+                                                qrWrapper.style.transform = "scale(0.95)";
+                                                setTimeout(() => qrWrapper.style.transform = "scale(1)", 100);
+                                            }).catch(err => {
+                                                console.error('Copy failure: ', err);
+                                            });
+                                        });
+                                    }
                                 }
 
                                 if (attempts > 30) {
@@ -1307,15 +1332,17 @@
                 if (!clientStats) return '#7a316f';
                 statsColor = usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
                 expColor = usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
-                switch (true) {
-                    case statsColor == "red" || expColor == "red":
-                        return "#E04141";
-                    case statsColor == "orange" || expColor == "orange":
-                        return "#FFA031";
-                    case statsColor == "blue" || expColor == "blue":
-                        return "#0e49b5";
-                    default:
-                        return "#7a316f";
+                with(this) {
+                    switch (true) {
+                        case statsColor == "red" || expColor == "red":
+                            return "#E04141";
+                        case statsColor == "orange" || expColor == "orange":
+                            return "#FFA031";
+                        case statsColor == "blue" || expColor == "blue":
+                            return "#0e49b5";
+                        default:
+                            return "#7a316f";
+                    }
                 }
             },
             isClientEnabled(dbInbound, email) {
