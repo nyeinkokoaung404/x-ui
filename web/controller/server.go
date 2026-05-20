@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/alireza0/x-ui/web/global"
-	"github.com/alireza0/x-ui/web/service"
+	"github.com/nyeinkokoaung404/x-ui/web/global"
+	"github.com/nyeinkokoaung404/x-ui/web/service"
 
 	"github.com/gin-gonic/gin"
 )
