@@ -76,7 +76,11 @@
                     text: () => content,
                 });
                 this.qrModal.clipboard.on('success', () => {
-                    app.$message.success('{{ i18n "copied" }}')
+                    if (typeof app !== 'undefined' && app.$message) {
+                        app.$message.success('{{ i18n "Copied" }}');
+                    } else {
+                        qrModalApp.$message.success('{{ i18n "Copied" }}');
+                    }
                     this.qrModal.clipboard.destroy();
                 });
             },
@@ -92,6 +96,13 @@
             },
             genSubJsonLink(subID) {
                 return app.subSettings.subJsonURI+subID;
+            },
+            showTransformerToast() {
+                if (typeof app !== 'undefined' && app.$message) {
+                    app.$message.success('Transformer Config Copied!');
+                } else if (this.$message) {
+                    this.$message.success('Transformer Config Copied!');
+                }
             }
         },
         updated() {
