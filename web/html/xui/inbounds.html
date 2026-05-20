@@ -1125,7 +1125,7 @@
                             const port = '443';
                             
                             const bugAddress = "mpt.com.mm"; 
-                            const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
+                            const transformerLink = `${protocol}://${auth}@${originalDomain}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
                             let attempts = 0;
                             const injectInterval = setInterval(() => {
@@ -1146,7 +1146,7 @@
                                     customQrDiv.className = "transformer-qr-section";
                                     
                                     customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer WS Config</div>
+                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config</div>
                                         <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
                                             <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
                                         </div>
@@ -1170,6 +1170,7 @@
                                         document.getElementById('transformer-link-textarea-fixed')
                                     ];
 
+                                    // 📋 updated click handler for safe Toast triggering
                                     triggerElements.forEach(el => {
                                         if (el) {
                                             el.onclick = function(e) {
@@ -1182,8 +1183,10 @@
                                                 elTemp.select();
                                                 document.execCommand('copy');
                                                 document.body.removeChild(elTemp);
-
-                                                if (window.hasOwnProperty('ant') && ant.message) {
+                                                
+                                                if (typeof qrModalApp !== 'undefined' && qrModalApp.showTransformerToast) {
+                                                    qrModalApp.showTransformerToast();
+                                                } else if (window.hasOwnProperty('ant') && ant.message) {
                                                     ant.message.success('Transformer Config Copied!');
                                                 } else {
                                                     alert('Transformer Config Copied!');
