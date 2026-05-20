@@ -205,10 +205,22 @@
                                             <a-icon type="edit"></a-icon>
                                             {{ i18n "edit" }}
                                         </a-menu-item>
-                                        <a-menu-item key="qrcode" v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard">
-                                            <a-icon type="qrcode"></a-icon>
-                                            {{ i18n "qrCode" }}
-                                        </a-menu-item>
+                                        <!-- Modified QR Code Menu: Show both options -->
+                                        <a-submenu key="qr-submenu" title="QR Code" v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard || dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan">
+                                            <template slot="title">
+                                                <a-icon type="qrcode"></a-icon>
+                                                <span>QR Code</span>
+                                            </template>
+                                            <a-menu-item key="qrcode-original">
+                                                <a-icon type="qrcode"></a-icon>
+                                                Original WS Config
+                                            </a-menu-item>
+                                            <a-menu-item key="qrcode-transformer" v-if="(dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan) && dbInbound.toInbound().stream.network === 'ws'">
+                                                <a-icon type="api"></a-icon>
+                                                Transformer Config (Bug/SNI)
+                                            </a-menu-item>
+                                        </a-submenu>
+                                        <!-- End of QR Code Menu Modification -->
                                         <template v-if="dbInbound.isMultiUser()">
                                             <a-menu-item key="addClient">
                                                 <a-icon type="user-add"></a-icon>
@@ -628,6 +640,19 @@
             showAlert: false,
             pageSize: 0,
             isMobile: window.innerWidth <= 768,
+            // Transformer Modal Data
+            transformerModalVisible: false,
+            transformerLoading: false,
+            transformerPort: '443',
+            transformerBugAddress: '',
+            transformerTargetDomain: '',
+            transformerAvailablePorts: ['443', '2053', '2083', '2087', '2096', '8443'],
+            transformerBugOptions: ['default', '172.67.133.97', 'mpt.com.mm', 'ceir.gov.mm', 'uab.com.mm', 'yomabank.com', 'wavemoney.com.mm', 'developers.cloudflare.com', 'support.cloudflare.com', 'custom'],
+            transformerCustomBug: '',
+            transformerFinalConfig: '',
+            transformerQRUrl: '',
+            transformerCurrentInbound: null,
+            transformerCurrentClient: null,
         },
         methods: {
             loading(spinning = true) {
@@ -812,6 +837,35 @@
                 }
             },
             clickAction(action, dbInbound) {
+                // Handle QR Code menu items
+                if (action.key === 'qrcode-original') {
+                    this.showQrcode(dbInbound.id);
+                    return;
+                }
+                if (action.key === 'qrcode-transformer') {
+                    // Open transformer modal with this inbound
+                    this.transformerCurrentInbound = dbInbound;
+                    this.transformerCurrentClient = null;
+                    // Pre-fill target domain from inbound's original config (SNI/Host)
+                    const inboundObj = dbInbound.toInbound();
+                    if (inboundObj && inboundObj.stream && inboundObj.stream.wsSettings) {
+                        this.transformerTargetDomain = inboundObj.stream.wsSettings.headers.Host || inboundObj.stream.security === 'tls' ? (inboundObj.stream.tlsSettings ? inboundObj.stream.tlsSettings.serverName : '') : '';
+                    } else if (inboundObj && inboundObj.stream && inboundObj.stream.tlsSettings) {
+                        this.transformerTargetDomain = inboundObj.stream.tlsSettings.serverName || '';
+                    }
+                    if (!this.transformerTargetDomain && inboundObj && inboundObj.settings && inboundObj.settings.clients && inboundObj.settings.clients.length > 0) {
+                        // Fallback: try to get from first client's host or something
+                        this.transformerTargetDomain = window.location.hostname;
+                    }
+                    this.transformerPort = '443';
+                    this.transformerBugAddress = 'default';
+                    this.transformerCustomBug = '';
+                    this.transformerFinalConfig = '';
+                    this.transformerQRUrl = '';
+                    this.transformerModalVisible = true;
+                    return;
+                }
+                // Original switch for other actions
                 switch (action.key) {
                     case "qrcode":
                         this.showQrcode(dbInbound.id);
@@ -1363,6 +1417,136 @@
             },
             onResize() {
                 this.isMobile = window.innerWidth <= 768;
+            },
+            // Transformer Modal Methods
+            openTransformerModal(inbound, client) {
+                this.transformerCurrentInbound = inbound;
+                this.transformerCurrentClient = client;
+                // Extract original domain from inbound
+                const inboundObj = inbound.toInbound();
+                if (inboundObj && inboundObj.stream && inboundObj.stream.wsSettings) {
+                    this.transformerTargetDomain = inboundObj.stream.wsSettings.headers.Host || inboundObj.stream.security === 'tls' ? (inboundObj.stream.tlsSettings ? inboundObj.stream.tlsSettings.serverName : '') : '';
+                } else if (inboundObj && inboundObj.stream && inboundObj.stream.tlsSettings) {
+                    this.transformerTargetDomain = inboundObj.stream.tlsSettings.serverName || '';
+                }
+                if (!this.transformerTargetDomain && inboundObj && inboundObj.settings && inboundObj.settings.clients && inboundObj.settings.clients.length > 0) {
+                    this.transformerTargetDomain = window.location.hostname;
+                }
+                this.transformerPort = '443';
+                this.transformerBugAddress = 'default';
+                this.transformerCustomBug = '';
+                this.transformerFinalConfig = '';
+                this.transformerQRUrl = '';
+                this.transformerModalVisible = true;
+            },
+            closeTransformerModal() {
+                this.transformerModalVisible = false;
+                this.transformerLoading = false;
+            },
+            getTransformerBugAddress() {
+                if (this.transformerBugAddress === 'custom') {
+                    return this.transformerCustomBug || this.transformerTargetDomain;
+                }
+                return this.transformerBugAddress;
+            },
+            async generateTransformedConfig() {
+                if (!this.transformerTargetDomain) {
+                    this.$message.error('Please enter Original Domain');
+                    return;
+                }
+                this.transformerLoading = true;
+                try {
+                    // Simulate async operation (or actual API call if needed)
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const inbound = this.transformerCurrentInbound;
+                    const client = this.transformerCurrentClient;
+                    const inboundObj = inbound.toInbound();
+                    let selectedClient = null;
+                    
+                    if (client) {
+                        selectedClient = client;
+                    } else if (inboundObj.settings && inboundObj.settings.clients && inboundObj.settings.clients.length > 0) {
+                        selectedClient = inboundObj.settings.clients[0];
+                    }
+                    
+                    if (!selectedClient) {
+                        this.$message.error('No client found for this inbound');
+                        this.transformerLoading = false;
+                        return;
+                    }
+                    
+                    const protocol = inboundObj.protocol;
+                    const bugAddress = this.getTransformerBugAddress();
+                    const port = this.transformerPort;
+                    const sni = this.transformerTargetDomain;
+                    const host = this.transformerTargetDomain;
+                    const path = (inboundObj.stream && inboundObj.stream.wsSettings && inboundObj.stream.wsSettings.path) ? inboundObj.stream.wsSettings.path : '/';
+                    
+                    let configLink = '';
+                    if (protocol === 'vless') {
+                        const uuid = selectedClient.id;
+                        const encryption = 'none';
+                        const security = 'tls';
+                        const type = 'ws';
+                        const fp = 'chrome';
+                        const alpn = 'http/1.1';
+                        const remark = selectedClient.email || inboundObj.remark || 'Transformer';
+                        configLink = `${protocol}://${uuid}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=${security}&encryption=${encryption}&host=${host}&type=${type}&sni=${sni}&fp=${fp}&alpn=${alpn}#${encodeURIComponent(remark)}`;
+                    } else if (protocol === 'trojan') {
+                        const password = selectedClient.password;
+                        const security = 'tls';
+                        const type = 'ws';
+                        const remark = selectedClient.email || inboundObj.remark || 'Transformer';
+                        configLink = `${protocol}://${password}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=${security}&host=${host}&type=${type}&sni=${sni}#${encodeURIComponent(remark)}`;
+                    } else if (protocol === 'vmess') {
+                        const uuid = selectedClient.id;
+                        const ps = selectedClient.email || inboundObj.remark || 'Transformer';
+                        const add = bugAddress;
+                        const portNum = parseInt(port);
+                        const tls = 'tls';
+                        const network = 'ws';
+                        const pathEncoded = path;
+                        const hostHeader = host;
+                        const sniForVmess = sni;
+                        const vmessConfigObj = {
+                            v: "2",
+                            ps: ps,
+                            add: add,
+                            port: portNum,
+                            id: uuid,
+                            aid: "0",
+                            net: network,
+                            type: "none",
+                            host: hostHeader,
+                            path: pathEncoded,
+                            tls: tls,
+                            sni: sniForVmess,
+                            alpn: "",
+                            fp: "chrome"
+                        };
+                        configLink = `vmess://${btoa(JSON.stringify(vmessConfigObj))}`;
+                    } else {
+                        this.$message.error('Unsupported protocol for transformer');
+                        this.transformerLoading = false;
+                        return;
+                    }
+                    
+                    this.transformerFinalConfig = configLink;
+                    this.transformerQRUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(configLink)}`;
+                    this.$message.success('Transformed config generated successfully');
+                } catch (err) {
+                    console.error(err);
+                    this.$message.error('Failed to generate transformed config');
+                } finally {
+                    this.transformerLoading = false;
+                }
+            },
+            copyTransformerConfig() {
+                if (!this.transformerFinalConfig) return;
+                navigator.clipboard.writeText(this.transformerFinalConfig).then(() => {
+                    this.$message.success('Copied to clipboard');
+                });
             }
         },
         watch: {
@@ -1420,5 +1604,88 @@
 {{template "inboundInfoModal"}}
 {{template "clientsModal"}}
 {{template "clientsBulkModal"}}
+
+<!--- TRANSFORMER_MODAL_START -->
+<!-- Transformer QR Code Modal for Bug/SNI transformation -->
+<script type="text/template" id="transformerModal">
+    <a-modal
+        :visible="transformerModalVisible"
+        @cancel="closeTransformerModal"
+        :footer="null"
+        :width="480"
+        :title="'Config Transformer - ' + (transformerCurrentInbound ? transformerCurrentInbound.remark : '')"
+        :class="themeSwitcher.currentTheme">
+        <a-spin :spinning="transformerLoading">
+            <div class="transformer-container" style="padding: 0 0 20px 0;">
+                <div class="transformer-field" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Port</label>
+                    <a-select v-model="transformerPort" style="width: 100%;">
+                        <a-select-option v-for="p in transformerAvailablePorts" :key="p" :value="p">[[ p ]]</a-select-option>
+                    </a-select>
+                </div>
+                <div class="transformer-field" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Bug Address (Target Address)</label>
+                    <a-select v-model="transformerBugAddress" style="width: 100%;" @change="transformerCustomBug = ''">
+                        <a-select-option v-for="opt in transformerBugOptions" :key="opt" :value="opt">[[ opt === 'default' ? 'None (Use Original Domain)' : opt ]]</a-select-option>
+                    </a-select>
+                    <a-input v-if="transformerBugAddress === 'custom'" v-model="transformerCustomBug" placeholder="Enter custom bug address" style="margin-top: 8px;"></a-input>
+                </div>
+                <div class="transformer-field" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Original Domain (SNI / Host)</label>
+                    <a-input v-model="transformerTargetDomain" placeholder="e.g., yourdomain.com"></a-input>
+                    <div style="font-size: 12px; color: #888; margin-top: 4px;">This will be used as SNI and Host header</div>
+                </div>
+                <div style="margin-top: 24px; display: flex; gap: 12px;">
+                    <a-button type="primary" @click="generateTransformedConfig" :loading="transformerLoading" style="flex: 1;">Generate Transformed Config</a-button>
+                </div>
+                <div v-if="transformerFinalConfig" style="margin-top: 24px; border-top: 1px solid #e8e8e8; padding-top: 20px;">
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <img :src="transformerQRUrl" style="max-width: 180px; border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: white;">
+                    </div>
+                    <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 12px; word-break: break-all;">
+                        <code style="font-size: 11px;">[[ transformerFinalConfig ]]</code>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <a-button @click="copyTransformerConfig" style="flex: 1;"><a-icon type="copy"></a-icon> Copy Link</a-button>
+                        <a-button @click="closeTransformerModal" style="flex: 1;">Close</a-button>
+                    </div>
+                </div>
+            </div>
+        </a-spin>
+    </a-modal>
+</script>
+<style>
+    .transformer-field label {
+        font-size: 13px;
+        color: #333;
+    }
+    .dark .transformer-field label {
+        color: #e0e0e0;
+    }
+    .transformer-container code {
+        word-break: break-all;
+        white-space: normal;
+    }
+</style>
+<!--- TRANSFORMER_MODAL_END -->
+
+<script>
+    // Register transformer modal component after DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('transformerModal')) {
+            // Mount the transformer modal to the app
+            const modalHtml = document.getElementById('transformerModal').innerHTML;
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer);
+            
+            // Vue component registration for the modal if needed
+            if (app && !app.$options.components && typeof app.$mount === 'function') {
+                // Already mounted, just ensure modal methods are available
+                console.log('Transformer modal ready');
+            }
+        }
+    });
+</script>
 </body>
 </html>
