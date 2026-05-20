@@ -294,9 +294,9 @@
                                     </a-popover>
                                     <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
                                         <template slot="content">
-                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail ]]</p>
+                                            <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
                                         </template>
-                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
+                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
                                     </a-popover>    
                                 </template>
                             </template>
@@ -1092,7 +1092,7 @@
                 return newDbInbound;
             },
             
-            // 🔄 ULTIMATE FIXED: Mutation Method for Client-Only Splicing & Robust Click-to-Copy Function
+            // PERFECTED: Target Client-Only Transformer with Exact WS Host Extraction & Click QR to Copy
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
@@ -1124,7 +1124,7 @@
                             const path = params.path || '/';
                             const port = '443';
                             
-                            const bugAddress = "mpt.com.mm"; 
+                            const bugAddress = "mpt.com.mm";
                             const transformerLink = `${protocol}://${auth}@${originalDomain}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
                             let attempts = 0;
@@ -1169,8 +1169,7 @@
                                         document.getElementById('transformer-qr-canvas'),
                                         document.getElementById('transformer-link-textarea-fixed')
                                     ];
-
-                                    // 📋 updated click handler for safe Toast triggering
+                                    
                                     triggerElements.forEach(el => {
                                         if (el) {
                                             el.onclick = function(e) {
