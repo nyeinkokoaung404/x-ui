@@ -25,7 +25,7 @@ jobs:
       with:
         images: |
           nkka404/x-ui
-          ghcr.io/nkka404/x-ui
+          ghcr.io/${{ github.repository_owner }}/x-ui
         tags: |
           type=ref,event=branch
           type=ref,event=tag
