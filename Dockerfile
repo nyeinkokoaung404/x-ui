@@ -9,7 +9,7 @@ RUN go build -ldflags "-w -s" -o build/x-ui main.go
 RUN ./DockerInitFiles.sh "$TARGETARCH"
 
 FROM alpine
-LABEL org.opencontainers.image.authors="alireza7@gmail.com"
+LABEL org.opencontainers.image.authors="nyeinkokoaung1997@gmail.com"
 ENV TZ=Asia/Tehran
 WORKDIR /app
 
