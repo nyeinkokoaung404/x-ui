@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alireza0/x-ui/config"
-	"github.com/alireza0/x-ui/logger"
-	"github.com/alireza0/x-ui/util/common"
+	"github.com/nyeinkokoaung404/x-ui/config"
+	"github.com/nyeinkokoaung404/x-ui/logger"
+	"github.com/nyeinkokoaung404/x-ui/util/common"
 )
 
 func GetBinaryName() string {
