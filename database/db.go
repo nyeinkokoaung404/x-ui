@@ -7,10 +7,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/alireza0/x-ui/config"
-	"github.com/alireza0/x-ui/database/model"
-	"github.com/alireza0/x-ui/util/common"
-	"github.com/alireza0/x-ui/xray"
+	"github.com/nyeinkokoaung404/x-ui/config"
+	"github.com/nyeinkokoaung404/x-ui/database/model"
+	"github.com/nyeinkokoaung404/x-ui/util/common"
+	"github.com/nyeinkokoaung404/x-ui/xray"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
