@@ -1092,19 +1092,22 @@
                 return newDbInbound;
             },
             
-            // 🔄 PERFECTED: Target Client-Only Transformer with Exact WS Host Extraction & Click QR to Copy
+            // 🔄 ULTIMATE FIXED: Mutation Method for Client-Only Splicing & Robust Click-to-Copy Function
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
                 
                 let originalLink = "";
-                // 🎯 Getting only one line of config specific to the target client
                 if (client && typeof newDbInbound.genClientLinks === 'function') {
                     originalLink = newDbInbound.genClientLinks(client, this.remarkModel);
                 } else if (typeof newDbInbound.genInboundLinks === 'function') {
                     originalLink = newDbInbound.genInboundLinks(this.remarkModel);
                 } else {
                     originalLink = newDbInbound.link;
+                }
+
+                if (originalLink && originalLink.includes("\n")) {
+                    originalLink = originalLink.split("\n")[0].trim();
                 }
 
                 try {
@@ -1118,11 +1121,9 @@
                             const remark = url.hash ? url.hash.substring(1) : 'Transformer_Config';
                             
                             const originalDomain = params.host || url.hostname; 
-                            
                             const path = params.path || '/';
-                            const port = url.port || '443';
+                            const port = '443';
                             
-                            // 💥 Change the SNI Bug Domain you want to use here
                             const bugAddress = "mpt.com.mm"; 
                             const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
@@ -1146,11 +1147,10 @@
                                     
                                     customQrDiv.innerHTML = `
                                         <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer WS Config</div>
-                                        <div style="font-size: 11px; color: #52c41a; margin-bottom: 8px;">👇 Click on Transformer QR Code to Copy</div>
-                                        <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; transition: transform 0.1s;" title="Click to Copy">
-                                            <canvas id="transformer-qr-canvas" style="margin: 5px auto; display: block; border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"></canvas>
+                                        <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
+                                            <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
                                         </div>
-                                        <textarea id="transformer-link-text" readonly style="width: 90%; height: 50px; font-size: 11px; margin-top: 8px; word-break: break-all; border-radius: 4px; padding: 4px;" class="ant-input">${transformerLink}</textarea>
+                                        <textarea id="transformer-link-textarea-fixed" readonly style="width: 90%; height: 55px; font-size: 11px; margin-top: 10px; word-break: break-all; border-radius: 4px; padding: 6px; background-color: #f5f5f5; color: #333;" class="ant-input">${transformerLink}</textarea>
                                     `;
                                     
                                     const oldSection = qrContainer.querySelector('.transformer-qr-section');
@@ -1160,33 +1160,49 @@
                                     
                                     new QRious({
                                         element: document.getElementById('transformer-qr-canvas'),
-                                        size: 180,
+                                        size: 170,
                                         value: transformerLink
                                     });
 
-                                    // 📋 Click QR to Copy Event Handler
-                                    const qrWrapper = document.getElementById('transformer-qr-click-wrapper');
-                                    if (qrWrapper) {
-                                        qrWrapper.addEventListener('click', () => {
-                                            navigator.clipboard.writeText(transformerLink).then(() => {
+                                    const triggerElements = [
+                                        document.getElementById('transformer-qr-click-wrapper'),
+                                        document.getElementById('transformer-qr-canvas'),
+                                        document.getElementById('transformer-link-textarea-fixed')
+                                    ];
+
+                                    triggerElements.forEach(el => {
+                                        if (el) {
+                                            el.onclick = function(e) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                
+                                                const elTemp = document.createElement('textarea');
+                                                elTemp.value = transformerLink;
+                                                document.body.appendChild(elTemp);
+                                                elTemp.select();
+                                                document.execCommand('copy');
+                                                document.body.removeChild(elTemp);
+
                                                 if (window.hasOwnProperty('ant') && ant.message) {
                                                     ant.message.success('Transformer Config Copied!');
                                                 } else {
                                                     alert('Transformer Config Copied!');
                                                 }
-                                                qrWrapper.style.transform = "scale(0.95)";
-                                                setTimeout(() => qrWrapper.style.transform = "scale(1)", 100);
-                                            }).catch(err => {
-                                                console.error('Copy failure: ', err);
-                                            });
-                                        });
-                                    }
+
+                                                const wrapper = document.getElementById('transformer-qr-click-wrapper');
+                                                if (wrapper) {
+                                                    wrapper.style.transform = "scale(0.92)";
+                                                    setTimeout(() => wrapper.style.transform = "scale(1)", 100);
+                                                }
+                                            };
+                                        }
+                                    });
                                 }
 
                                 if (attempts > 30) {
                                     clearInterval(injectInterval);
                                 }
-                            }, 100);
+                            }, 150);
                         }
                     }
                 } catch (err) {
