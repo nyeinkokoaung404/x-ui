@@ -3,7 +3,7 @@ package controller
 import (
 	"encoding/json"
 
-	"github.com/alireza0/x-ui/web/service"
+	"github.com/nyeinkokoaung404/x-ui/web/service"
 
 	"github.com/gin-gonic/gin"
 )
