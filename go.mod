@@ -1,6 +1,6 @@
 module github.com/nyeinkokoaung404/x-ui
 
-go 1.26.1
+go 1.25
 
 require (
 	github.com/gin-contrib/gzip v1.2.6
