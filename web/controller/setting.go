@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/alireza0/x-ui/web/entity"
-	"github.com/alireza0/x-ui/web/service"
-	"github.com/alireza0/x-ui/web/session"
+	"github.com/nyeinkokoaung404/x-ui/web/entity"
+	"github.com/nyeinkokoaung404/x-ui/web/service"
+	"github.com/nyeinkokoaung404/x-ui/web/session"
 
 	"github.com/gin-gonic/gin"
 )
