@@ -168,16 +168,30 @@
                                 </a-col>
                             </a-row>
                         </div>
-                        <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
+                        
+                        <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px;'">
                             <a-tooltip :title='`{{ i18n "filter" }}`'>
-                            <a-switch v-model="enableFilter"
-                                :style="isMobile ? 'margin-bottom: .5rem; display: flex;' : 'margin-right: .5rem;'"
-                                @change="toggleFilter">
-                                <a-icon slot="checkedChildren" type="search"></a-icon>
-                                <a-icon slot="unCheckedChildren" type="filter"></a-icon>
-                            </a-switch>
+                                <a-switch v-model="enableFilter"
+                                    :style="isMobile ? 'margin-bottom: .5rem; display: inline-flex;' : ''"
+                                    @change="toggleFilter">
+                                    <a-icon slot="checkedChildren" type="search"></a-icon>
+                                    <a-icon slot="unCheckedChildren" type="filter"></a-icon>
+                                </a-switch>
                             </a-tooltip>
-                            <a-input v-if="!enableFilter" v-model.lazy="searchKey" placeholder='{{ i18n "search" }}' autofocus style="max-width: 300px" :size="isMobile ? 'small' : ''"></a-input>
+
+                            <div :style="isMobile ? 'margin-bottom: .5rem; display: flex; align-items: center; gap: 8px;' : 'display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; border-left: 1px solid #ccc; padding-left: 12px;'">
+                                <a-tooltip title="Transformer Status (On/Off)">
+                                    <a-switch v-model="tfEnabled" @change="saveTfSettings">
+                                        <span slot="checkedChildren">TF On</span>
+                                        <span slot="unCheckedChildren">TF Off</span>
+                                    </a-switch>
+                                </a-tooltip>
+                                <a-input v-if="tfEnabled" v-model="tfBugAddress" placeholder="Enter Bug Domain (e.g. mpt.com.mm)" @change="saveTfSettings" style="max-width: 180px;" size="small"></a-input>
+                            </div>
+
+                            <div style="flex-grow: 1;"></div>
+                            
+                            <a-input v-if="!enableFilter" v-model.lazy="searchKey" placeholder='{{ i18n "search" }}' autofocus style="max-width: 300px; width: 100%;" :size="isMobile ? 'small' : ''"></a-input>
                             <a-radio-group v-if="enableFilter" v-model="filterBy" @change="filterInbounds" button-style="solid" :size="isMobile ? 'small' : ''">
                                 <a-radio-button value="">{{ i18n "none" }}</a-radio-button>
                                 <a-radio-button value="deactive">{{ i18n "disabled" }}</a-radio-button>
@@ -380,9 +394,9 @@
                                                     </a-popover>
                                                     <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
                                                         <template slot="content">
-                                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail ]]</p>
+                                                            <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
                                                         </template>
-                                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
+                                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
                                                     </a-popover>                
                                                 </td>
                                             </tr>
@@ -628,8 +642,17 @@
             showAlert: false,
             pageSize: 0,
             isMobile: window.innerWidth <= 768,
+            
+            // 🔄 ADDED: LocalStorage variables for dynamic configuration persistence
+            tfEnabled: localStorage.getItem("tf_transformer_enabled") !== "false", // default is true
+            tfBugAddress: localStorage.getItem("tf_transformer_bug") || "mpt.com.mm",
         },
         methods: {
+            // 🔄 ADDED: Save Configuration on state change
+            saveTfSettings() {
+                localStorage.setItem("tf_transformer_enabled", this.tfEnabled);
+                localStorage.setItem("tf_transformer_bug", this.tfBugAddress.trim());
+            },
             loading(spinning = true) {
                 this.spinning = spinning;
             },
@@ -1092,7 +1115,7 @@
                 return newDbInbound;
             },
             
-            // PERFECTED: Target Client-Only Transformer with Exact WS Host Extraction & Click QR to Copy
+            // 🔄 PERFECTED: Target Client-Only Transformer with Switch Toggle and Dynamic BugAddress
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
@@ -1110,6 +1133,12 @@
                     originalLink = originalLink.split("\n")[0].trim();
                 }
 
+                // ⚡ Switch Toggle
+                if (!this.tfEnabled) {
+                    qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
+                    return;
+                }
+
                 try {
                     if (originalLink && (originalLink.startsWith("vless://") || originalLink.startsWith("trojan://"))) {
                         const url = new URL(originalLink);
@@ -1122,10 +1151,10 @@
                             
                             const originalDomain = params.host || url.hostname; 
                             const path = params.path || '/';
-                            const port = '443';
+                            const port = url.port || '443';
                             
-                            const bugAddress = "mpt.com.mm";
-                            const transformerLink = `${protocol}://${auth}@${originalDomain}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
+                            const bugAddress = this.tfBugAddress.trim() || "mpt.com.mm"; 
+                            const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
                             let attempts = 0;
                             const injectInterval = setInterval(() => {
@@ -1169,7 +1198,7 @@
                                         document.getElementById('transformer-qr-canvas'),
                                         document.getElementById('transformer-link-textarea-fixed')
                                     ];
-                                    
+
                                     triggerElements.forEach(el => {
                                         if (el) {
                                             el.onclick = function(e) {
@@ -1252,8 +1281,8 @@
             resetClientTraffic(client, dbInboundId, confirmation = true) {
                 if (confirmation){
                     this.$confirm({
-                        title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,
-                        content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
+                        title: '{{ i18n "pages.resetTraffic"}}' + ' ' + client.email,
+                        content: '{{ i18n "pages.resetTrafficContent"}}',
                         class: themeSwitcher.currentTheme,
                         okText: '{{ i18n "reset"}}',
                         cancelText: '{{ i18n "cancel"}}',
@@ -1360,7 +1389,7 @@
                             return "#0e49b5";
                         default:
                             return "#7a316f";
-                    }
+                }
                 }
             },
             isClientEnabled(dbInbound, email) {
