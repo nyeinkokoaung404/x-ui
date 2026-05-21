@@ -1151,7 +1151,7 @@
                             
                             const originalDomain = params.host || url.hostname; 
                             const path = params.path || '/';
-                            const port = url.port || '443';
+                            const port = '443';
                             
                             const bugAddress = this.tfBugAddress.trim() || "mpt.com.mm"; 
                             const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
