@@ -113,7 +113,7 @@
                                     </div>
                                 </template>
                             </a-col>
-                        </a-row>
+                        </row>
                     </a-card>
                 </transition>
                 <transition name="list" appear>
@@ -310,7 +310,7 @@
                                         <template slot="content">
                                             <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
                                         </template>
-                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
+                                        <a-tag color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
                                     </a-popover>    
                                 </template>
                             </template>
@@ -319,12 +319,12 @@
                                     <template slot="content">
                                         <table cellpadding="2" width="100%">
                                             <tr>
-                                                <td>↑[[ sizeFormat(dbInbound.up) ]]</t>d
-                                                <td>↓[[ sizeFormat(dbInbound.down) ]]</t>d
+                                                <td>↑[[ sizeFormat(dbInbound.up) ]]</td>
+                                                <td>↓[[ sizeFormat(dbInbound.down) ]]</td>
                                             </tr>
                                             <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
-                                                <td>{{ i18n "remained" }}</t>d
-                                                <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</t>d
+                                                <td>{{ i18n "remained" }}</td>
+                                                <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
                                             </tr>
                                         </table>
                                     </template>
@@ -356,7 +356,7 @@
                                     <template slot="content">
                                         <table cellpadding="2">
                                             <tr>
-                                                <td>{{ i18n "pages.inbounds.protocol" }}</t>d
+                                                <td>{{ i18n "pages.inbounds.protocol" }}</td>
                                                 <td>
                                                     <a-tag style="margin:0;" color="purple">[[ dbInbound.protocol ]]</a-tag>
                                                     <template v-if="dbInbound.isVMess || dbInbound.isVLess || dbInbound.isTrojan || dbInbound.isSS">
@@ -364,14 +364,14 @@
                                                         <a-tag style="margin:0;" v-if="dbInbound.toInbound().stream.isTls" color="green">tls</a-tag>
                                                         <a-tag style="margin:0;" v-if="dbInbound.toInbound().stream.isReality" color="green">reality</a-tag>
                                                     </template>                    
-                                                </t>d
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td>{{ i18n "pages.inbounds.port" }}</t>d
-                                                <td><a-tag>[[ dbInbound.port ]]</a-tag></t>d
+                                                <td>{{ i18n "pages.inbounds.port" }}</td>
+                                                <td><a-tag>[[ dbInbound.port ]]</a-tag></td>
                                             </tr>
                                             <tr v-if="clientCount[dbInbound.id]">
-                                                <td>{{ i18n "clients" }}</t>d
+                                                <td>{{ i18n "clients" }}</td>
                                                 <td>
                                                     <a-tag style="margin:0;" color="blue">[[ clientCount[dbInbound.id].clients ]]</a-tag>
                                                     <a-popover title='{{ i18n "disabled" }}' :overlay-class-name="themeSwitcher.currentTheme">
@@ -398,21 +398,21 @@
                                                         </template>
                                                         <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
                                                     </a-popover>                
-                                                </t>d
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td>{{ i18n "pages.inbounds.traffic" }}</t>d
+                                                <td>{{ i18n "pages.inbounds.traffic" }}</td>
                                                 <td>
                                                     <a-popover :overlay-class-name="themeSwitcher.currentTheme">
                                                         <template slot="content">
                                                             <table cellpadding="2" width="100%">
                                                                 <tr>
-                                                                    <td>↑[[ sizeFormat(dbInbound.up) ]]</t>d
-                                                                    <td>↓[[ sizeFormat(dbInbound.down) ]]</t>d
+                                                                    <td>↑[[ sizeFormat(dbInbound.up) ]]</td>
+                                                                    <td>↓[[ sizeFormat(dbInbound.down) ]]</td>
                                                                 </tr>
                                                                 <tr v-if="dbInbound.total > 0 &&  dbInbound.up + dbInbound.down < dbInbound.total">
-                                                                    <td>{{ i18n "remained" }}</t>d
-                                                                    <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</t>d
+                                                                    <td>{{ i18n "remained" }}</td>
+                                                                    <td>[[ sizeFormat(dbInbound.total - dbInbound.up - dbInbound.down) ]]</td>
                                                                 </tr>
                                                             </table>
                                                         </template>
@@ -424,16 +424,16 @@
                                                             <template v-else>&infin;</template>
                                                         </a-tag>
                                                     </a-popover>                    
-                                                </t>d
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td>{{ i18n "pages.inbounds.expireDate" }}</t>d
+                                                <td>{{ i18n "pages.inbounds.expireDate" }}</td>
                                                 <td>
                                                     <a-tag style="min-width: 50px; text-align: center;" v-if="dbInbound.expiryTime > 0" :color="dbInbound.isExpiry? 'red': 'blue'">
                                                         [[ DateUtil.formatMillis(dbInbound.expiryTime) ]]
                                                     </a-tag>
                                                     <a-tag v-else style="text-align: center;" color="purple" class="infinite-tag">&infin;</a-tag>                    
-                                                </t>d
+                                                </td>
                                             </tr>
                                         </table>
                                     </template>
@@ -643,12 +643,10 @@
             pageSize: 0,
             isMobile: window.innerWidth <= 768,
             
-            // Transformer settings
-            tfEnabled: localStorage.getItem("tf_transformer_enabled") !== "false",
+            tfEnabled: localStorage.getItem("tf_transformer_enabled") !== "false", 
             tfBugAddress: localStorage.getItem("tf_transformer_bug") || "mpt.com.mm",
         },
         methods: {
-            // Save Transformer settings
             saveTfSettings() {
                 localStorage.setItem("tf_transformer_enabled", this.tfEnabled);
                 localStorage.setItem("tf_transformer_bug", this.tfBugAddress.trim());
@@ -1115,30 +1113,42 @@
                 return newDbInbound;
             },
             
-            // FIXED: QR Code with Transformer - Now supports per-client configuration
+            // 🔄 PERFECTED FIXED LAYER: Precise Splicing & Click QR to Copy with Switch Controls
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
                 
                 let originalLink = "";
-                if (client && typeof newDbInbound.genClientLinks === 'function') {
-                    // Generate link for the specific client
-                    originalLink = newDbInbound.genClientLinks(client, this.remarkModel);
-                } else if (typeof newDbInbound.genInboundLinks === 'function') {
-                    originalLink = newDbInbound.genInboundLinks(this.remarkModel);
-                } else {
-                    originalLink = newDbInbound.link;
+                
+                // 🎯 Target Client-Only Link Filtration Loop
+                if (client && typeof newDbInbound.toInbound === 'function') {
+                    const inboundInstance = newDbInbound.toInbound();
+                    if (typeof inboundInstance.genAllLinks === 'function') {
+                        const allGenerated = inboundInstance.genAllLinks(dbInbound.remark, this.remarkModel, client);
+                        if (allGenerated && allGenerated.length > 0) {
+                            const targetCredential = client.id || client.password || "";
+                            const matchedLinkObj = allGenerated.find(l => l.link && l.link.includes(targetCredential));
+                            originalLink = matchedLinkObj ? matchedLinkObj.link : allGenerated[0].link;
+                        }
+                    }
+                }
+                
+                if (!originalLink) {
+                    if (client && typeof newDbInbound.genClientLinks === 'function') {
+                        originalLink = newDbInbound.genClientLinks(client, this.remarkModel);
+                    } else if (typeof newDbInbound.genInboundLinks === 'function') {
+                        originalLink = newDbInbound.genInboundLinks(this.remarkModel);
+                    } else {
+                        originalLink = newDbInbound.link;
+                    }
                 }
 
                 if (originalLink && originalLink.includes("\n")) {
                     originalLink = originalLink.split("\n")[0].trim();
                 }
-
-                // First, show the original QR modal
-                qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
-
-                // If transformer is disabled, return early
+                
                 if (!this.tfEnabled) {
+                    qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
                     return;
                 }
 
@@ -1149,12 +1159,8 @@
                         
                         if (params.type === "ws") {
                             const protocol = originalLink.split("://")[0];
-                            // Get auth part: for vless it's username, for trojan it's password or username
-                            const auth = protocol === 'vless' ? url.username : (url.password || url.username);
-                            
-                            // Use client email as remark if available, otherwise use original remark
-                            let remark = url.hash ? url.hash.substring(1) : (client ? client.email : 'Transformer_Config');
-                            if (remark.length > 50) remark = remark.substring(0, 47) + '...';
+                            const auth = protocol === 'vless' ? url.username : url.password || url.username;
+                            const remark = url.hash ? url.hash.substring(1) : 'Transformer_Config';
                             
                             const originalDomain = params.host || url.hostname; 
                             const path = params.path || '/';
@@ -1170,10 +1176,6 @@
                                 
                                 if (qrContainer) {
                                     clearInterval(injectInterval);
-                                    
-                                    // Remove existing transformer section to avoid duplicates
-                                    const existingSection = qrContainer.querySelector('.transformer-qr-section');
-                                    if (existingSection) existingSection.remove();
 
                                     qrContainer.style.overflowY = "auto";
                                     qrContainer.style.maxHeight = "85vh";
@@ -1186,12 +1188,15 @@
                                     customQrDiv.className = "transformer-qr-section";
                                     
                                     customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config (${this.escapeHtml(remark)})</div>
+                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config</div>
                                         <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
                                             <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
                                         </div>
-                                        <textarea id="transformer-link-textarea-fixed" readonly style="width: 90%; height: 55px; font-size: 11px; margin-top: 10px; word-break: break-all; border-radius: 4px; padding: 6px; background-color: #f5f5f5; color: #333;" class="ant-input">${this.escapeHtml(transformerLink)}</textarea>
+                                        <textarea id="transformer-link-textarea-fixed" readonly style="width: 90%; height: 55px; font-size: 11px; margin-top: 10px; word-break: break-all; border-radius: 4px; padding: 6px; background-color: #f5f5f5; color: #333;" class="ant-input">${transformerLink}</textarea>
                                     `;
+                                    
+                                    const oldSection = qrContainer.querySelector('.transformer-qr-section');
+                                    if (oldSection) oldSection.remove();
                                     
                                     qrContainer.appendChild(customQrDiv);
                                     
@@ -1209,7 +1214,7 @@
 
                                     triggerElements.forEach(el => {
                                         if (el) {
-                                            el.onclick = (e) => {
+                                            el.onclick = function(e) {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 
@@ -1223,9 +1228,9 @@
                                                 if (typeof qrModalApp !== 'undefined' && qrModalApp.showTransformerToast) {
                                                     qrModalApp.showTransformerToast();
                                                 } else if (window.hasOwnProperty('ant') && ant.message) {
-                                                    ant.message.success(`Config for ${remark} copied!`);
+                                                    ant.message.success('Transformer Config Copied!');
                                                 } else {
-                                                    alert(`Config for ${remark} copied!`);
+                                                    alert('Transformer Config Copied!');
                                                 }
 
                                                 const wrapper = document.getElementById('transformer-qr-click-wrapper');
@@ -1247,16 +1252,9 @@
                 } catch (err) {
                     console.error("Config transformer error inside QR modal:", err);
                 }
+
+                qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
             },
-            
-            // Helper function to escape HTML
-            escapeHtml(text) {
-                if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            },
-            
             showInfo(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 index=0;
@@ -1296,8 +1294,8 @@
             resetClientTraffic(client, dbInboundId, confirmation = true) {
                 if (confirmation){
                     this.$confirm({
-                        title: '{{ i18n "pages.resetTraffic"}}' + ' ' + client.email,
-                        content: '{{ i18n "pages.resetTrafficContent"}}',
+                        title: '{{ i18n "pages.inbounds.resetTraffic"}}' + ' ' + client.email,
+                        content: '{{ i18n "pages.inbounds.resetTrafficContent"}}',
                         class: themeSwitcher.currentTheme,
                         okText: '{{ i18n "reset"}}',
                         cancelText: '{{ i18n "cancel"}}',
