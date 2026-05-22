@@ -5,6 +5,11 @@ const supportLangs = [
         icon: '🇺🇸',
     },
     {
+        name: 'မြန်မာဘာသာ',
+        value: 'my-MM',
+        icon: '🇲🇲',
+    },
+    {
         name: 'فارسی',
         value: 'fa-IR',
         icon: '🇮🇷',
