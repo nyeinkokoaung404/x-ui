@@ -1113,7 +1113,7 @@
                 return newDbInbound;
             },
             
-            // 🔄 PERFECTED FIXED LAYER: Precise Splicing & Click QR to Copy with Switch Controls
+            // 🔄 Precise Splicing & Click QR to Copy with Switch Controls
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
@@ -1166,7 +1166,7 @@
                             const path = params.path || '/';
                             const port = '443';
                             
-                            const bugAddress = this.tfBugAddress.trim() || "mpt.com.mm"; 
+                            const bugAddress = this.tfBugAddress.trim() || "myanmar.com"; 
                             const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
 
                             let attempts = 0;
@@ -1188,11 +1188,10 @@
                                     customQrDiv.className = "transformer-qr-section";
                                     
                                     customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config</div>
+                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config (${remark})</div>
                                         <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
                                             <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
                                         </div>
-                                        <textarea id="transformer-link-textarea-fixed" readonly style="width: 90%; height: 55px; font-size: 11px; margin-top: 10px; word-break: break-all; border-radius: 4px; padding: 6px; background-color: #f5f5f5; color: #333;" class="ant-input">${transformerLink}</textarea>
                                     `;
                                     
                                     const oldSection = qrContainer.querySelector('.transformer-qr-section');
