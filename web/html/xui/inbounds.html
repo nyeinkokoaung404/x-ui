@@ -1120,7 +1120,6 @@
                 
                 let originalLink = "";
                 
-                // 🎯 Target Client-Only Link Filtration Loop
                 if (client && typeof newDbInbound.toInbound === 'function') {
                     const inboundInstance = newDbInbound.toInbound();
                     if (typeof inboundInstance.genAllLinks === 'function') {
@@ -1201,7 +1200,7 @@
                                     
                                     new QRious({
                                         element: document.getElementById('transformer-qr-canvas'),
-                                        size: 170,
+                                        size: 260,
                                         value: transformerLink
                                     });
 
