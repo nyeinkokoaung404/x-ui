@@ -180,7 +180,7 @@
                             </a-tooltip>
 
                             <div :style="isMobile ? 'margin-bottom: .5rem; display: flex; align-items: center; gap: 8px;' : 'display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; border-left: 1px solid #ccc; padding-left: 12px;'">
-                                <a-tooltip title="Transformer Status (On/Off)">
+                                <a-tooltip title="Transformer Status">
                                     <a-switch v-model="tfEnabled" @change="saveTfSettings">
                                         <span slot="checkedChildren">TF On</span>
                                         <span slot="unCheckedChildren">TF Off</span>
