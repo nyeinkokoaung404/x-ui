@@ -180,7 +180,7 @@
                             </a-tooltip>
 
                             <div :style="isMobile ? 'margin-bottom: .5rem; display: flex; align-items: center; gap: 8px;' : 'display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; border-left: 1px solid #ccc; padding-left: 12px;'">
-                                <a-tooltip title="Transformer Status">
+                                <a-tooltip title="Transformer Status (On/Off)">
                                     <a-switch v-model="tfEnabled" @change="saveTfSettings">
                                         <span slot="checkedChildren">TF On</span>
                                         <span slot="unCheckedChildren">TF Off</span>
@@ -1113,7 +1113,7 @@
                 return newDbInbound;
             },
             
-            // 🔄 Precise Splicing & Click QR to Copy with Switch Controls
+            // Precise Splicing & Click QR to Copy with Switch Controls
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
@@ -1166,7 +1166,7 @@
                             const port = '443';
                             
                             const bugAddress = this.tfBugAddress.trim() || "myanmar.com"; 
-                            const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=http%2F1.1&encryption=none&host=${originalDomain}&fp=chrome&type=ws&sni=${originalDomain}#${remark}`;
+                            const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=h3%2Ch2%2Chttp%2F1.1&encryption=none&insecure=0&host=${originalDomain}&fp=chrome&type=ws&allowInsecure=0&sni=${originalDomain}#${remark}`;
 
                             let attempts = 0;
                             const injectInterval = setInterval(() => {
@@ -1187,7 +1187,7 @@
                                     customQrDiv.className = "transformer-qr-section";
                                     
                                     customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ Transformer Config (${remark})</div>
+                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ TF Config (${remark})</div>
                                         <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
                                             <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
                                         </div>
