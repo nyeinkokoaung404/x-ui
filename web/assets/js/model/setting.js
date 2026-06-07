@@ -38,7 +38,7 @@ class AllSetting {
         this.subJsonMux = "";
         this.subJsonRules = "";
 
-        this.timeLocation = "Asia/Tehran";
+        this.timeLocation = "Asia/Yangon";
 
         if (data == null) {
             return
