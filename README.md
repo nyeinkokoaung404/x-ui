@@ -181,11 +181,16 @@ docker build -t x-ui .
 
 ## Preview
 
+<details>
+<summary>Click to expand</summary>
+
 ![inbounds](./media/inbounds.png)
 ![Dark inbounds](./media/inbounds-dark.png)
 ![outbounds](./media/outbounds.png)
 ![rules](./media/rules.png)
 ![warp](./media/warp.png)
+
+</details>
 
 
 ## API Routes
