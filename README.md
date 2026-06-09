@@ -1,4 +1,12 @@
 # X-UI
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./media/x-ui-dark.png">
+    <img alt="3x-ui" src="./media/x-ui-light.png">
+  </picture>
+</p>
+
 **An Advanced Web Panel • Built on Xray Core**
 
 ![](https://img.shields.io/github/v/release/nyeinkokoaung404/x-ui.svg)
