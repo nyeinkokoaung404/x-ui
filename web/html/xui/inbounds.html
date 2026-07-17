@@ -113,7 +113,7 @@
                                     </div>
                                 </template>
                             </a-col>
-                        </row>
+                        </a-row>
                     </a-card>
                 </transition>
                 <transition name="list" appear>
@@ -168,30 +168,16 @@
                                 </a-col>
                             </a-row>
                         </div>
-                        
-                        <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px;'">
+                        <div :style="isMobile ? '' : 'display: flex; align-items: center; justify-content: flex-start;'">
                             <a-tooltip :title='`{{ i18n "filter" }}`'>
-                                <a-switch v-model="enableFilter"
-                                    :style="isMobile ? 'margin-bottom: .5rem; display: inline-flex;' : ''"
-                                    @change="toggleFilter">
-                                    <a-icon slot="checkedChildren" type="search"></a-icon>
-                                    <a-icon slot="unCheckedChildren" type="filter"></a-icon>
-                                </a-switch>
+                            <a-switch v-model="enableFilter"
+                                :style="isMobile ? 'margin-bottom: .5rem; display: flex;' : 'margin-right: .5rem;'"
+                                @change="toggleFilter">
+                                <a-icon slot="checkedChildren" type="search"></a-icon>
+                                <a-icon slot="unCheckedChildren" type="filter"></a-icon>
+                            </a-switch>
                             </a-tooltip>
-
-                            <div :style="isMobile ? 'margin-bottom: .5rem; display: flex; align-items: center; gap: 8px;' : 'display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; border-left: 1px solid #ccc; padding-left: 12px;'">
-                                <a-tooltip title="Transformer Status (On/Off)">
-                                    <a-switch v-model="tfEnabled" @change="saveTfSettings">
-                                        <span slot="checkedChildren">TF On</span>
-                                        <span slot="unCheckedChildren">TF Off</span>
-                                    </a-switch>
-                                </a-tooltip>
-                                <a-input v-if="tfEnabled" v-model="tfBugAddress" placeholder="Enter Bug Domain (e.g. mpt.com.mm)" @change="saveTfSettings" style="max-width: 180px;" size="small"></a-input>
-                            </div>
-
-                            <div style="flex-grow: 1;"></div>
-                            
-                            <a-input v-if="!enableFilter" v-model.lazy="searchKey" placeholder='{{ i18n "search" }}' autofocus style="max-width: 300px; width: 100%;" :size="isMobile ? 'small' : ''"></a-input>
+                            <a-input v-if="!enableFilter" v-model.lazy="searchKey" placeholder='{{ i18n "search" }}' autofocus style="max-width: 300px" :size="isMobile ? 'small' : ''"></a-input>
                             <a-radio-group v-if="enableFilter" v-model="filterBy" @change="filterInbounds" button-style="solid" :size="isMobile ? 'small' : ''">
                                 <a-radio-button value="">{{ i18n "none" }}</a-radio-button>
                                 <a-radio-button value="deactive">{{ i18n "disabled" }}</a-radio-button>
@@ -308,9 +294,9 @@
                                     </a-popover>
                                     <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
                                         <template slot="content">
-                                            <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
+                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail ]]</p>
                                         </template>
-                                        <a-tag color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
+                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
                                     </a-popover>    
                                 </template>
                             </template>
@@ -394,9 +380,9 @@
                                                     </a-popover>
                                                     <a-popover title='{{ i18n "online" }}' :overlay-class-name="themeSwitcher.currentTheme">
                                                         <template slot="content">
-                                                            <p v-for="clientEmail in onlineClients">[[ clientEmail ]]</p>
+                                                            <p v-for="clientEmail in clientCount[dbInbound.id].online">[[ clientEmail ]]</p>
                                                         </template>
-                                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="onlineClients.length">[[ onlineClients.length ]]</a-tag>
+                                                        <a-tag style="margin:0; padding: 0 2px;" color="green" v-if="clientCount[dbInbound.id].online.length">[[ clientCount[dbInbound.id].online.length ]]</a-tag>
                                                     </a-popover>                
                                                 </td>
                                             </tr>
@@ -642,15 +628,8 @@
             showAlert: false,
             pageSize: 0,
             isMobile: window.innerWidth <= 768,
-            
-            tfEnabled: localStorage.getItem("tf_transformer_enabled") !== "false", 
-            tfBugAddress: localStorage.getItem("tf_transformer_bug") || "myanmar.com",
         },
         methods: {
-            saveTfSettings() {
-                localStorage.setItem("tf_transformer_enabled", this.tfEnabled);
-                localStorage.setItem("tf_transformer_bug", this.tfBugAddress.trim());
-            },
             loading(spinning = true) {
                 this.spinning = spinning;
             },
@@ -901,7 +880,7 @@
                     isEdit: true
                 });
             },
-            openCloneInbound(dbInbound) {
+			openCloneInbound(dbInbound) {
                 this.$confirm({
                     title: '{{ i18n "pages.inbounds.cloneInbound"}} \"' + dbInbound.remark + '\"',
                     content: '{{ i18n "pages.inbounds.cloneInboundContent"}}',
@@ -1112,145 +1091,9 @@
                 }
                 return newDbInbound;
             },
-            
-            // Precise Splicing & Click QR to Copy with Switch Controls
             showQrcode(dbInboundId, client) {
                 dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
                 newDbInbound = this.checkFallback(dbInbound);
-                
-                let originalLink = "";
-                
-                if (client && typeof newDbInbound.toInbound === 'function') {
-                    const inboundInstance = newDbInbound.toInbound();
-                    if (typeof inboundInstance.genAllLinks === 'function') {
-                        const allGenerated = inboundInstance.genAllLinks(dbInbound.remark, this.remarkModel, client);
-                        if (allGenerated && allGenerated.length > 0) {
-                            const targetCredential = client.id || client.password || "";
-                            const matchedLinkObj = allGenerated.find(l => l.link && l.link.includes(targetCredential));
-                            originalLink = matchedLinkObj ? matchedLinkObj.link : allGenerated[0].link;
-                        }
-                    }
-                }
-                
-                if (!originalLink) {
-                    if (client && typeof newDbInbound.genClientLinks === 'function') {
-                        originalLink = newDbInbound.genClientLinks(client, this.remarkModel);
-                    } else if (typeof newDbInbound.genInboundLinks === 'function') {
-                        originalLink = newDbInbound.genInboundLinks(this.remarkModel);
-                    } else {
-                        originalLink = newDbInbound.link;
-                    }
-                }
-
-                if (originalLink && originalLink.includes("\n")) {
-                    originalLink = originalLink.split("\n")[0].trim();
-                }
-                
-                if (!this.tfEnabled) {
-                    qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
-                    return;
-                }
-
-                try {
-                    if (originalLink && (originalLink.startsWith("vless://") || originalLink.startsWith("trojan://"))) {
-                        const url = new URL(originalLink);
-                        const params = Object.fromEntries(url.searchParams);
-                        
-                        if (params.type === "ws") {
-                            const protocol = originalLink.split("://")[0];
-                            const auth = protocol === 'vless' ? url.username : url.password || url.username;
-                            const remark = url.hash ? url.hash.substring(1) : 'Transformer_Config';
-                            
-                            const originalDomain = params.host || url.hostname; 
-                            const path = params.path || '/';
-                            const port = '443';
-                            
-                            const bugAddress = this.tfBugAddress.trim() || "myanmar.com"; 
-                            const transformerLink = `${protocol}://${auth}@${bugAddress}:${port}?path=${encodeURIComponent(path)}&security=tls&alpn=h3%2Ch2%2Chttp%2F1.1&encryption=none&insecure=0&host=${originalDomain}&fp=chrome&type=ws&allowInsecure=0&sni=${originalDomain}#${remark}`;
-
-                            let attempts = 0;
-                            const injectInterval = setInterval(() => {
-                                attempts++;
-                                const qrContainer = document.querySelector('.ant-modal-body') || document.querySelector('.ant-modal-content');
-                                
-                                if (qrContainer) {
-                                    clearInterval(injectInterval);
-
-                                    qrContainer.style.overflowY = "auto";
-                                    qrContainer.style.maxHeight = "85vh";
-
-                                    const customQrDiv = document.createElement('div');
-                                    customQrDiv.style.marginTop = "15px";
-                                    customQrDiv.style.paddingTop = "15px";
-                                    customQrDiv.style.borderTop = "2px dashed #40a9ff";
-                                    customQrDiv.style.textAlign = "center";
-                                    customQrDiv.className = "transformer-qr-section";
-                                    
-                                    customQrDiv.innerHTML = `
-                                        <div style="font-weight: bold; margin-bottom: 4px; color: #1890ff; font-size: 13px;">⚙️ TF Config (${remark})</div>
-                                        <div id="transformer-qr-click-wrapper" style="display: inline-block; cursor: pointer; padding: 6px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s;" title="Click to Copy">
-                                            <canvas id="transformer-qr-canvas" style="margin: 0 auto; display: block;"></canvas>
-                                        </div>
-                                    `;
-                                    
-                                    const oldSection = qrContainer.querySelector('.transformer-qr-section');
-                                    if (oldSection) oldSection.remove();
-                                    
-                                    qrContainer.appendChild(customQrDiv);
-                                    
-                                    new QRious({
-                                        element: document.getElementById('transformer-qr-canvas'),
-                                        size: 260,
-                                        value: transformerLink
-                                    });
-
-                                    const triggerElements = [
-                                        document.getElementById('transformer-qr-click-wrapper'),
-                                        document.getElementById('transformer-qr-canvas'),
-                                        document.getElementById('transformer-link-textarea-fixed')
-                                    ];
-
-                                    triggerElements.forEach(el => {
-                                        if (el) {
-                                            el.onclick = function(e) {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                
-                                                const elTemp = document.createElement('textarea');
-                                                elTemp.value = transformerLink;
-                                                document.body.appendChild(elTemp);
-                                                elTemp.select();
-                                                document.execCommand('copy');
-                                                document.body.removeChild(elTemp);
-                                                
-                                                if (typeof qrModalApp !== 'undefined' && qrModalApp.showTransformerToast) {
-                                                    qrModalApp.showTransformerToast();
-                                                } else if (window.hasOwnProperty('ant') && ant.message) {
-                                                    ant.message.success('Transformer Config Copied!');
-                                                } else {
-                                                    alert('Transformer Config Copied!');
-                                                }
-
-                                                const wrapper = document.getElementById('transformer-qr-click-wrapper');
-                                                if (wrapper) {
-                                                    wrapper.style.transform = "scale(0.92)";
-                                                    setTimeout(() => wrapper.style.transform = "scale(1)", 100);
-                                                }
-                                            };
-                                        }
-                                    });
-                                }
-
-                                if (attempts > 30) {
-                                    clearInterval(injectInterval);
-                                }
-                            }, 150);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Config transformer error inside QR modal:", err);
-                }
-
                 qrModal.show('{{ i18n "qrCode"}}', newDbInbound, client);
             },
             showInfo(dbInboundId, client) {
@@ -1390,17 +1233,15 @@
                 if (!clientStats) return '#7a316f';
                 statsColor = usageColor(clientStats.down + clientStats.up, this.trafficDiff, clientStats.total);
                 expColor = usageColor(new Date().getTime(), this.expireDiff, clientStats.expiryTime);
-                with(this) {
-                    switch (true) {
-                        case statsColor == "red" || expColor == "red":
-                            return "#E04141";
-                        case statsColor == "orange" || expColor == "orange":
-                            return "#FFA031";
-                        case statsColor == "blue" || expColor == "blue":
-                            return "#0e49b5";
-                        default:
-                            return "#7a316f";
-                }
+                switch (true) {
+                    case statsColor == "red" || expColor == "red":
+                        return "#E04141";
+                    case statsColor == "orange" || expColor == "orange":
+                        return "#FFA031";
+                    case statsColor == "blue" || expColor == "blue":
+                        return "#0e49b5";
+                    default:
+                        return "#7a316f";
                 }
             },
             isClientEnabled(dbInbound, email) {
@@ -1445,7 +1286,7 @@
                     },
                 });
             },
-            exportAllSubs() {
+			exportAllSubs() {
                 let subLinks = []
                 for (const dbInbound of this.dbInbounds) {
                     const clients = this.getInboundClients(dbInbound);
@@ -1501,10 +1342,12 @@
             },
             pagination(obj){
                 if (this.pageSize > 0 && obj.length>this.pageSize) {
+                    // Set page options based on object size
                     sizeOptions = [];
                     for (i=this.pageSize;i<=obj.length;i=i+this.pageSize) {
                         sizeOptions.push(i.toString());
                     }
+                    // Add option to see all in one page
                     sizeOptions.push(i.toString());
                     
                     p = {
