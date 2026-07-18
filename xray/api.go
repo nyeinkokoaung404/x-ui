@@ -3,15 +3,18 @@ package xray
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"os"
 	"regexp"
 	"time"
 
+	"github.com/nyeinkokoaung404/x-ui/config"
 	"github.com/nyeinkokoaung404/x-ui/logger"
 	"github.com/nyeinkokoaung404/x-ui/util/common"
 
 	"github.com/xtls/xray-core/app/proxyman/command"
+	routingcommand "github.com/xtls/xray-core/app/router/command"
 	statsService "github.com/xtls/xray-core/app/stats/command"
+	"github.com/xtls/xray-core/common/platform"
 	"github.com/xtls/xray-core/common/protocol"
 	"github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/infra/conf"
@@ -27,35 +30,82 @@ import (
 
 type XrayAPI struct {
 	HandlerServiceClient *command.HandlerServiceClient
+	RoutingServiceClient *routingcommand.RoutingServiceClient
 	StatsServiceClient   *statsService.StatsServiceClient
 	grpcClient           *grpc.ClientConn
 	isConnected          bool
 }
 
-func (x *XrayAPI) Init(apiPort int) (err error) {
-	if apiPort == 0 {
-		return common.NewError("xray api port wrong:", apiPort)
+func (x *XrayAPI) Init(apiAddr string) (err error) {
+	if apiAddr == "" {
+		return common.NewError("xray api port wrong:", apiAddr)
 	}
-	x.grpcClient, err = grpc.NewClient(fmt.Sprintf("127.0.0.1:%v", apiPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	x.grpcClient, err = grpc.NewClient(apiAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
 	x.isConnected = true
 
 	hsClient := command.NewHandlerServiceClient(x.grpcClient)
+	rsClient := routingcommand.NewRoutingServiceClient(x.grpcClient)
 	ssClient := statsService.NewStatsServiceClient(x.grpcClient)
 
 	x.HandlerServiceClient = &hsClient
+	x.RoutingServiceClient = &rsClient
 	x.StatsServiceClient = &ssClient
 
 	return
 }
 
 func (x *XrayAPI) Close() {
-	x.grpcClient.Close()
+	if x.grpcClient != nil {
+		x.grpcClient.Close()
+		x.grpcClient = nil
+	}
 	x.HandlerServiceClient = nil
+	x.RoutingServiceClient = nil
 	x.StatsServiceClient = nil
 	x.isConnected = false
+}
+
+func ensureGeodataAssetPath() {
+	binPath := config.GetBinFolderPath()
+	if binPath != "" {
+		os.Setenv(platform.AssetLocation, binPath)
+	}
+}
+
+func (x *XrayAPI) AddRule(ruleJSON []byte, shouldAppend bool) error {
+	if x.RoutingServiceClient == nil {
+		return common.NewError("routing api is not initialized")
+	}
+	ensureGeodataAssetPath()
+	rc := &conf.RouterConfig{RuleList: []json.RawMessage{ruleJSON}}
+	built, err := rc.Build()
+	if err != nil {
+		logger.Debug("Failed to build routing rule:", err)
+		return err
+	}
+	if len(built.Rule) == 0 {
+		return common.NewError("empty routing rule")
+	}
+	client := *x.RoutingServiceClient
+	_, err = client.AddRule(context.Background(), &routingcommand.AddRuleRequest{
+		Config:       serial.ToTypedMessage(built),
+		ShouldAppend: shouldAppend,
+	})
+	return err
+}
+
+func (x *XrayAPI) DelRule(ruleTag string) error {
+	if x.RoutingServiceClient == nil {
+		return common.NewError("routing api is not initialized")
+	}
+	client := *x.RoutingServiceClient
+	_, err := client.RemoveRule(context.Background(), &routingcommand.RemoveRuleRequest{
+		RuleTag: ruleTag,
+	})
+	return err
 }
 
 func (x *XrayAPI) AddInbound(inbound []byte) error {
@@ -85,6 +135,54 @@ func (x *XrayAPI) DelInbound(tag string) error {
 		Tag: tag,
 	})
 	return err
+}
+
+func (x *XrayAPI) AddOutbound(outbound []byte) error {
+	client := *x.HandlerServiceClient
+
+	conf := new(conf.OutboundDetourConfig)
+	err := json.Unmarshal(outbound, conf)
+	if err != nil {
+		logger.Debug("Failed to unmarshal outbound:", err)
+		return err
+	}
+	config, err := conf.Build()
+	if err != nil {
+		logger.Debug("Failed to build outbound:", err)
+		return err
+	}
+	outboundConfig := command.AddOutboundRequest{Outbound: config}
+
+	_, err = client.AddOutbound(context.Background(), &outboundConfig)
+	return err
+}
+
+func (x *XrayAPI) DelOutbound(tag string) error {
+	client := *x.HandlerServiceClient
+	_, err := client.RemoveOutbound(context.Background(), &command.RemoveOutboundRequest{
+		Tag: tag,
+	})
+	return err
+}
+
+func (x *XrayAPI) HasOutbound(tag string) (bool, error) {
+	if x.HandlerServiceClient == nil {
+		return false, common.NewError("handler api is not initialized")
+	}
+	client := *x.HandlerServiceClient
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	resp, err := client.ListOutbounds(ctx, &command.ListOutboundsRequest{})
+	if err != nil {
+		return false, err
+	}
+	for _, outbound := range resp.GetOutbounds() {
+		if outbound.GetTag() == tag {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]interface{}) error {
@@ -119,6 +217,11 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 				vlessAccount.Testpre = uint32(testpre)
 			} else if testpre, ok := testpreVal.(uint32); ok && testpre > 0 {
 				vlessAccount.Testpre = testpre
+			}
+		}
+		if reverse, ok := user["reverse"].(map[string]interface{}); ok {
+			vlessAccount.Reverse = &vless.Reverse{
+				Tag: reverse["tag"].(string),
 			}
 		}
 		account = serial.ToTypedMessage(vlessAccount)
@@ -183,6 +286,67 @@ func (x *XrayAPI) RemoveUser(inboundTag string, email string) error {
 		}),
 	})
 	return err
+}
+
+func (x *XrayAPI) GetUserOnlineIpList(email string) (map[string]int64, error) {
+	if x.StatsServiceClient == nil {
+		return nil, common.NewError("xray api is not initialized")
+	}
+	client := *x.StatsServiceClient
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	resp, err := client.GetStatsOnlineIpList(ctx, &statsService.GetStatsRequest{
+		Name: "user>>>" + email + ">>>online",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetIps(), nil
+}
+
+type OnlineUserInfo struct {
+	Email string           `json:"email"`
+	IPs   map[string]int64 `json:"ips"`
+}
+
+func userStatToOnlineUserInfo(user *statsService.UserStat) OnlineUserInfo {
+	info := OnlineUserInfo{
+		Email: user.GetEmail(),
+		IPs:   map[string]int64{},
+	}
+	for _, entry := range user.GetIps() {
+		if entry.GetIp() != "" {
+			info.IPs[entry.GetIp()] = entry.GetLastSeen()
+		}
+	}
+	return info
+}
+
+func (x *XrayAPI) GetUsersOnlineInfo() ([]OnlineUserInfo, error) {
+	if x.StatsServiceClient == nil {
+		return nil, common.NewError("xray api is not initialized")
+	}
+	client := *x.StatsServiceClient
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	resp, err := client.GetUsersStats(ctx, &statsService.GetUsersStatsRequest{
+		IncludeTraffic: true,
+		Reset_:         false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]OnlineUserInfo, 0)
+	for _, user := range resp.GetUsers() {
+		if user.GetEmail() == "" || user.GetTraffic() == nil || user.GetTraffic().GetDownlink() == 0 {
+			continue
+		}
+		result = append(result, userStatToOnlineUserInfo(user))
+	}
+	return result, nil
 }
 
 func (x *XrayAPI) GetTraffic(reset bool) ([]*Traffic, []*ClientTraffic, error) {
