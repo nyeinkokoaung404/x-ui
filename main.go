@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	_ "time/tzdata"
 	_ "unsafe"
 
 	"github.com/nyeinkokoaung404/x-ui/config"
@@ -67,6 +68,7 @@ func runWebServer() {
 	}
 
 	sigCh := make(chan os.Signal, 1)
+	// Trap shutdown signals
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1)
 	for {
 		sig := <-sigCh
@@ -361,14 +363,10 @@ func getPanelURI() {
 }
 
 func migrateDb() {
-	inboundService := service.InboundService{}
-
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Start migrating database...")
-	inboundService.MigrateDB()
 	fmt.Println("Migration done!")
 }
 
