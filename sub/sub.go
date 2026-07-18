@@ -87,16 +87,6 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		SubUpdates = "10"
 	}
 
-	SubJsonFragment, err := s.settingService.GetSubJsonFragment()
-	if err != nil {
-		SubJsonFragment = ""
-	}
-
-	SubJsonNoises, err := s.settingService.GetSubJsonNoises()
-	if err != nil {
-		SubJsonNoises = ""
-	}
-
 	SubJsonMux, err := s.settingService.GetSubJsonMux()
 	if err != nil {
 		SubJsonMux = ""
@@ -111,7 +101,7 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 
 	s.sub = NewSUBController(
 		g, LinksPath, JsonPath, Encrypt, ShowInfo, RemarkModel, SubUpdates,
-		SubJsonFragment, SubJsonNoises, SubJsonMux, SubJsonRules)
+		SubJsonMux, SubJsonRules)
 
 	return engine, nil
 }
@@ -163,9 +153,11 @@ func (s *Server) Start() (err error) {
 	if certFile != "" || keyFile != "" {
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err == nil {
-			c := &tls.Config{
-				Certificates: []tls.Certificate{cert},
+			subDomain, err := s.settingService.GetSubDomain()
+			if err != nil {
+				return err
 			}
+			c := network.NewTLSConfig(cert, subDomain)
 			listener = network.NewAutoHttpsListener(listener)
 			listener = tls.NewListener(listener, c)
 			logger.Info("sub server run https on", listener.Addr())
