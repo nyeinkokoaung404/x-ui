@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/nyeinkokoaung404/x-ui/config"
+	"github.com/nyeinkokoaung404/x-ui/database/migrations"
 	"github.com/nyeinkokoaung404/x-ui/database/model"
 	"github.com/nyeinkokoaung404/x-ui/util/common"
 	"github.com/nyeinkokoaung404/x-ui/xray"
@@ -39,18 +40,6 @@ func initUser() error {
 	return nil
 }
 
-func initInbound() error {
-	return db.AutoMigrate(&model.Inbound{})
-}
-
-func initSetting() error {
-	return db.AutoMigrate(&model.Setting{})
-}
-
-func initClientTraffic() error {
-	return db.AutoMigrate(&xray.ClientTraffic{})
-}
-
 func InitDB(dbPath string) error {
 	dir := path.Dir(dbPath)
 	err := os.MkdirAll(dir, fs.ModeDir)
@@ -78,21 +67,18 @@ func InitDB(dbPath string) error {
 	if err != nil {
 		return err
 	}
-	err = initInbound()
-	if err != nil {
-		return err
-	}
-	err = initSetting()
+	err = db.AutoMigrate(
+		&model.Inbound{},
+		&model.Outbound{},
+		&model.RoutingRule{},
+		&model.Setting{},
+		&xray.ClientTraffic{},
+	)
 	if err != nil {
 		return err
 	}
 
-	err = initClientTraffic()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return migrations.Run(db)
 }
 
 func CloseDB() error {
